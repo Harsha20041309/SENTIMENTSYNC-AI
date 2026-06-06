@@ -25,7 +25,6 @@ import {
   Users,
   X,
   ShieldCheck,
-  MoreVertical,
   SlidersHorizontal,
   Share2,
   Bell,
@@ -111,6 +110,19 @@ interface TrendEntry {
   positive: number;
   negative: number;
   total: number;
+}
+
+interface ActivityLog {
+  id: string;
+  action: string;
+  timestamp: string;
+}
+
+interface DatasetAnalysis {
+  summary: string;
+  positive: number;
+  negative: number;
+  neutral: number;
 }
 
 // --- Main Application Component ---
@@ -270,7 +282,15 @@ export default function SentimentSyncAI() {
     if (confirm("Are you sure you want to clear the current session and reset local metrics?")) {
       setMessages([]);
       setConversationId(null);
-      setAnalytics({ positive: 0, negative: 0, neutral: 0, total: 0, csat: 0 });
+      setAnalytics({
+  positive: 0,
+  negative: 0,
+  neutral: 0,
+  total: 0,
+  csat: 0,
+  avg_confidence: 0,
+  weekly_trend: []
+});
       setActiveTab('chat');
     }
   };
@@ -351,7 +371,7 @@ export default function SentimentSyncAI() {
 
   // --- Effects ---
   // Activity Log State
-  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
   // Fetch Activity Logs
   const fetchActivityLogs = useCallback(async () => {
@@ -379,6 +399,7 @@ export default function SentimentSyncAI() {
 
   // Update effects
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     fetchConversations();
     fetchAnalytics();
@@ -693,7 +714,7 @@ export default function SentimentSyncAI() {
                       {/* Filter Bar */}
                       <div className="p-2 bg-white border-b border-[#E5E7EB] flex flex-nowrap gap-2 items-center">
                         <input type="text" placeholder="Search..." value={chatSearch} onChange={e => setChatSearch(e.target.value)} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5 flex-1" />
-                        <select value={chatSentimentFilter} onChange={e => setChatSentimentFilter(e.target.value as any)} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5">
+                        <select value={chatSentimentFilter} onChange={e => setChatSentimentFilter(e.target.value as Message['sentiment'] | 'all')} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5">
                           <option value="all">All</option>
                           <option value="positive">Positive</option>
                           <option value="neutral">Neutral</option>
@@ -942,12 +963,7 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
   );
 }
 
-interface TeamViewProps {
-  collaborators: Collaborator[];
-  onInvite: () => void;
-}
-
-function TeamView({ collaborators, onInvite, activityLogs }: { collaborators: Collaborator[], onInvite: () => void, activityLogs: any[] }) {
+function TeamView({ collaborators, onInvite, activityLogs }: { collaborators: Collaborator[], onInvite: () => void, activityLogs: ActivityLog[] }) {
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -982,7 +998,7 @@ function TeamView({ collaborators, onInvite, activityLogs }: { collaborators: Co
       <div className="bg-white border border-[#E5E7EB] rounded-[2rem] p-8 shadow-sm">
         <h3 className="text-lg font-bold mb-6">Activity Timeline</h3>
         <div className="space-y-6">
-            {activityLogs.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log, index) => (
+            {activityLogs.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log) => (
                 <div key={log.id} className="relative pl-8 border-l-2 border-[#FFF7ED] last:border-0 pb-2">
                     <div className="absolute -left-[9px] top-1 w-4 h-4 bg-[#F59E0B] rounded-full border-4 border-white" />
                     <div className="text-sm font-bold text-slate-800">{log.action}</div>
@@ -1030,7 +1046,7 @@ function ReportsView({ conversations, onExportCSV, onExportPDF }: { conversation
 
 function DatasetAnalysisView() {
   const [file, setFile] = useState<File | null>(null);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<DatasetAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
@@ -1082,7 +1098,7 @@ function DatasetAnalysisView() {
   );
 }
 interface NavItemProps {
-  icon: React.ReactElement;
+  icon: React.ReactElement<{ className?: string }>;
   label: string;
   active: boolean;
   sidebarOpen: boolean;
@@ -1104,7 +1120,7 @@ interface StatCardProps {
   label: string;
   value: string | number;
   sub: string;
-  icon: React.ReactElement;
+  icon: React.ReactElement<{ className?: string }>;
   color: 'orange' | 'green' | 'red';
   trend: 'up' | 'down';
 }
@@ -1157,7 +1173,7 @@ function ChartContainer({ title, subtitle, children }: ChartContainerProps) {
 interface InsightMetricProps {
   label: string;
   value: string;
-  icon: React.ReactElement;
+  icon: React.ReactElement<{ className?: string }>;
   score: number;
 }
 
