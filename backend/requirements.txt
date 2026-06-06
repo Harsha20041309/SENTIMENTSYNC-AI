@@ -3,3 +3,4 @@ flask-cors
 flask-sqlalchemy
 textblob
 python-dotenv
+gunicorn
