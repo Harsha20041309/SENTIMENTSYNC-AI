@@ -40,7 +40,7 @@ import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 // --- API Configuration ---
-const API_BASE = "http://127.0.0.1:5000/api";
+const API_BASE = "https://sentimentsync-ai.onrender.com";
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
   const controller = new AbortController();
