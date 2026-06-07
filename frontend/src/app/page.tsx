@@ -152,8 +152,8 @@ export default function SentimentSyncAI() {
   
   // Collaborative State
   const [collaborators, setCollaborators] = useState<Collaborator[]>([
-    { id: '1', name: 'Alex Rivers', email: 'alex@enterprise.ai', role: 'Admin', status: 'Active', joinedAt: '2024-01-15' },
-    { id: '2', name: 'Sarah Chen', email: 'sarah.c@enterprise.ai', role: 'Analyst', status: 'Active', joinedAt: '2024-02-10' }
+    { id: '1', name: 'Katiki Reddy Sri Harsha', email: 'harsha@enterprise.ai', role: 'Admin', status: 'Active', joinedAt: '2024-01-15' },
+    { id: '2', name: 'Pranay', email: 'pranay@enterprise.ai', role: 'Analyst', status: 'Active', joinedAt: '2024-02-10' }
   ]);
   
   const [newCollab, setNewCollab] = useState({ name: '', email: '', role: 'Viewer' as Role });
@@ -449,7 +449,7 @@ export default function SentimentSyncAI() {
   // --- Render logic ---
 
   return (
-    <div className="flex h-screen w-full bg-[#FFFFFF] text-[#1F2937] font-sans overflow-hidden text-[13px]">
+    <div className="flex h-screen h-[100dvh] w-full bg-[#FFFFFF] text-[#1F2937] font-sans overflow-hidden text-[13px]">
       {!mounted ? (
         <div className="flex-1 flex flex-col items-center justify-center bg-white">
            <div className="animate-pulse flex flex-col items-center gap-6">
@@ -619,7 +619,7 @@ export default function SentimentSyncAI() {
             )}
 
             <div className="flex-1 overflow-hidden relative">
-              <div className="absolute inset-0 overflow-y-auto">
+              <div className={`absolute inset-0 ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                   {activeTab === 'dashboard' && (
                     <DashboardView 
                       analytics={analytics} 
@@ -635,7 +635,7 @@ export default function SentimentSyncAI() {
                     />
                   )}
                   {activeTab === 'analytics' && (
-                    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500">
+                    <div className="p-2 md:p-8 space-y-3 md:space-y-8 animate-in slide-in-from-right-4 duration-500">
                       <GlobalActionBar 
                         onExportCSV={handleExportCSV}
                         onExportPDF={handleExportPDF}
@@ -645,7 +645,7 @@ export default function SentimentSyncAI() {
                         onClear={handleClearSession}
                       />
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-6">
+                      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-6">
                         <StatCard label="Total" value={analytics.total} icon={<MessageSquare />} color="orange" trend="up" sub="Total Interactions" />
                         <StatCard label="Positive" value={analytics.positive} icon={<Smile />} color="green" trend="up" sub="Positive Sentiment" />
                         <StatCard label="Neutral" value={analytics.neutral} icon={<MessageSquare />} color="orange" trend="up" sub="Neutral Sentiment" />
@@ -654,12 +654,12 @@ export default function SentimentSyncAI() {
                         <StatCard label="Confidence" value={`${analytics.avg_confidence}`} icon={<Target />} color="orange" trend="up" sub="Model Confidence" />
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-8">
                         <ChartContainer title="Sentiment Distribution" subtitle="Pie chart of sentiment distribution">
-                          <div className="h-48 md:h-64">
+                          <div className="h-44 md:h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
-                                <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                <Pie data={pieData} innerRadius={window?.innerWidth < 768 ? 45 : 60} outerRadius={window?.innerWidth < 768 ? 65 : 80} paddingAngle={5} dataKey="value">
                                   {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                                 </Pie>
                                 <Tooltip />
@@ -670,7 +670,7 @@ export default function SentimentSyncAI() {
                         </ChartContainer>
 
                         <ChartContainer title="Weekly Sentiment" subtitle="Weekly sentiment trend">
-                          <div className="h-48 md:h-64">
+                          <div className="h-44 md:h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={analytics.weekly_trend}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
@@ -686,7 +686,7 @@ export default function SentimentSyncAI() {
                         </ChartContainer>
 
                         <ChartContainer title="Positive vs Negative" subtitle="Bar chart comparing sentiments">
-                          <div className="h-48 md:h-64">
+                          <div className="h-44 md:h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={analytics.weekly_trend}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
@@ -702,7 +702,7 @@ export default function SentimentSyncAI() {
                         </ChartContainer>
                         
                         <ChartContainer title="Daily Activity" subtitle="Total interactions per day">
-                          <div className="h-48 md:h-64">
+                          <div className="h-44 md:h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={analytics.weekly_trend}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
@@ -731,31 +731,42 @@ export default function SentimentSyncAI() {
                     />
                   )}
                   {activeTab === 'chat' && (
-                    <div className="flex h-full flex-col max-w-4xl mx-auto animate-in fade-in duration-500 relative">
-                      {/* Filter Bar */}
-                      <div className="p-2 bg-white border-b border-[#E5E7EB] flex flex-nowrap gap-2 items-center">
-                        <input type="text" placeholder="Search..." value={chatSearch} onChange={e => setChatSearch(e.target.value)} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5 flex-1" />
-                        <select value={chatSentimentFilter} onChange={e => setChatSentimentFilter(e.target.value as Message['sentiment'] | 'all')} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5">
-                          <option value="all">All</option>
-                          <option value="positive">Positive</option>
-                          <option value="neutral">Neutral</option>
-                          <option value="negative">Negative</option>
-                        </select>
-                        <input type="date" value={chatDateRange.start} onChange={e => setChatDateRange({...chatDateRange, start: e.target.value})} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5" />
-                        <input type="date" value={chatDateRange.end} onChange={e => setChatDateRange({...chatDateRange, end: e.target.value})} className="text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5" />
-                        <button onClick={() => {setChatSearch(""); setChatSentimentFilter('all'); setChatDateRange({start: '', end: ''})}} className="text-xs bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg whitespace-nowrap">Reset</button>
+                    <div className="flex h-full flex-col max-w-4xl mx-auto animate-in fade-in duration-500 overflow-hidden bg-white">
+                      {/* Filter Bar - Sticky at top of chat area */}
+                      <div className="flex-none p-2 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] flex flex-col md:flex-row gap-2 items-stretch md:items-center z-20 sticky top-0">
+                        <div className="flex-1 flex gap-2">
+                          <input type="text" placeholder="Search messages..." value={chatSearch} onChange={e => setChatSearch(e.target.value)} className="text-[11px] md:text-xs border border-[#E5E7EB] rounded-lg px-3 py-1.5 w-full md:flex-1 bg-slate-50/50" />
+                        </div>
+                        <div className="flex flex-wrap md:flex-nowrap gap-2 items-center">
+                          <select value={chatSentimentFilter} onChange={e => setChatSentimentFilter(e.target.value as Message['sentiment'] | 'all')} className="text-[11px] md:text-xs border border-[#E5E7EB] rounded-lg px-2 md:px-3 py-1.5 bg-white flex-1 md:flex-none min-w-[80px]">
+                            <option value="all">All</option>
+                            <option value="positive">Positive</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="negative">Negative</option>
+                          </select>
+                          <div className="flex gap-1 items-center flex-1 md:flex-none">
+                            <input type="date" value={chatDateRange.start} onChange={e => setChatDateRange({...chatDateRange, start: e.target.value})} className="text-[10px] md:text-xs border border-[#E5E7EB] rounded-lg px-1 md:px-2 py-1.5 w-full md:w-[100px] bg-white" />
+                            <span className="text-slate-300">-</span>
+                            <input type="date" value={chatDateRange.end} onChange={e => setChatDateRange({...chatDateRange, end: e.target.value})} className="text-[10px] md:text-xs border border-[#E5E7EB] rounded-lg px-1 md:px-2 py-1.5 w-full md:w-[100px] bg-white" />
+                          </div>
+                          <button onClick={() => {setChatSearch(""); setChatSentimentFilter('all'); setChatDateRange({start: '', end: ''})}} className="text-[11px] md:text-xs bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg whitespace-nowrap border border-rose-100 hover:bg-rose-100 transition-colors">Reset</button>
+                        </div>
                       </div>
 
-                      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-8 scroll-smooth pb-32 md:pb-40">
+                      {/* Scrollable Message Area */}
+                      <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 md:p-8 space-y-3 md:space-y-8 scroll-smooth pb-6 flex flex-col">
                         {filteredMessages.length === 0 ? (
-                          <div className="h-full flex flex-col items-center justify-center text-center py-12 md:py-24 opacity-40">
-                            <Zap className="w-12 h-12 md:w-16 md:h-16 text-[#F59E0B] mb-4 md:mb-6" />
-                            <h3 className="text-xl md:text-2xl font-bold text-[#1F2937]">No Messages Found</h3>
+                          <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 min-h-[300px]">
+                            <div className="bg-slate-50 p-6 rounded-full mb-6">
+                              <Zap className="w-10 h-10 md:w-16 md:h-16 text-[#F59E0B]" />
+                            </div>
+                            <h3 className="text-base md:text-2xl font-bold text-[#1F2937]">No Messages Found</h3>
+                            <p className="text-[11px] md:text-sm font-medium text-slate-500 mt-2 max-w-[200px] md:max-w-none">Try adjusting your filters or start a new session.</p>
                           </div>
                         ) : (
                           filteredMessages.map((msg, idx) => (
                             <div key={idx} className={`flex gap-3 md:gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                              <div className={`max-w-[85%] md:max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1.5 md:gap-2`}>
+                              <div className={`max-w-[88%] md:max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1 md:gap-2`}>
                                 <div className="flex items-center gap-2 px-1">
                                   {msg.sentiment && (() => {
                                       const getEmotion = () => {
@@ -772,7 +783,7 @@ export default function SentimentSyncAI() {
                                     })()}
                                   <span className="text-[8px] md:text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{msg.role === 'user' ? 'Operator' : 'AI Engine'}</span>
                                 </div>
-                                <div className={`text-xs md:text-[13px] leading-relaxed p-3 rounded-xl shadow-sm font-medium ${msg.role === 'user' ? 'bg-[#F59E0B] text-white rounded-tr-none' : 'bg-[#FFF7ED] text-[#1F2937] border border-[#FDBA74]/10 rounded-tl-none'}`}>
+                                <div className={`text-[12px] md:text-[13px] leading-relaxed p-3 rounded-xl shadow-sm font-medium ${msg.role === 'user' ? 'bg-[#F59E0B] text-white rounded-tr-none' : 'bg-[#FFF7ED] text-[#1F2937] border border-[#FDBA74]/10 rounded-tl-none'}`}>
                                   {msg.content}
                                 </div>
                               </div>
@@ -796,10 +807,13 @@ export default function SentimentSyncAI() {
                         )}
                       </div>
 
-                      <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#E5E7EB] p-4 md:p-8 z-10">
-                        <form onSubmit={handleSendMessage} className="max-w-2xl mx-auto relative group">
-                          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type message..." className="w-full bg-[#FFF7ED]/30 border border-[#E5E7EB] rounded-xl md:rounded-[1rem] py-2.5 md:py-3 pl-4 pr-12 focus:outline-none focus:ring-4 focus:ring-[#F59E0B]/5 focus:border-[#F59E0B] transition-all text-xs md:text-sm font-semibold placeholder:text-[#1F2937]/20 shadow-inner" />
-                          <button type="submit" disabled={isLoading || !input.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#F59E0B] text-white p-2 rounded-lg md:rounded-[0.75rem] hover:bg-[#F59E0B]/90 transition-all shadow-lg active:scale-95 disabled:bg-slate-200 disabled:shadow-none"><Send className="w-4 h-4" /></button>
+                      {/* Fixed Bottom Input Area */}
+                      <div className="flex-none bg-white border-t border-[#E5E7EB] p-3 md:p-6 z-30 sticky bottom-0 pb-safe shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)]">
+                        <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto relative group">
+                          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Message SentimentSync..." className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 md:py-4 pl-4 pr-14 focus:outline-none focus:ring-4 focus:ring-[#F59E0B]/10 focus:border-[#F59E0B] transition-all text-[13px] md:text-sm font-medium placeholder:text-slate-400 shadow-sm" />
+                          <button type="submit" disabled={isLoading || !input.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#F59E0B] text-white p-2.5 rounded-xl hover:bg-[#F59E0B]/90 transition-all shadow-md active:scale-95 disabled:bg-slate-100 disabled:text-slate-300 disabled:shadow-none">
+                            <Send className="w-4 h-4 md:w-5 md:h-5" />
+                          </button>
                         </form>
                       </div>
                     </div>
@@ -873,25 +887,25 @@ interface GlobalActionBarProps {
 
 function GlobalActionBar({ onExportCSV, onExportPDF, onInvite, onRefresh, isRefreshing, onClear }: GlobalActionBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-[#FFF7ED] p-3 md:p-4 rounded-2xl border border-[#FDBA74]/20 mb-8">
-      <button onClick={onExportCSV} className="flex items-center gap-2 bg-white border border-[#E5E7EB] px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
-        <FileDown className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F59E0B]" /> <span className="hidden sm:inline">Export CSV</span><span className="sm:hidden">CSV</span>
+    <div className="flex flex-wrap items-center gap-1.5 md:gap-3 bg-[#FFF7ED] p-2 md:p-4 rounded-xl md:rounded-2xl border border-[#FDBA74]/20 mb-3 md:mb-8">
+      <button onClick={onExportCSV} className="flex items-center gap-1.5 bg-white border border-[#E5E7EB] px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
+        <FileDown className="w-3 h-3 md:w-4 md:h-4 text-[#F59E0B]" /> <span className="hidden sm:inline">Export CSV</span><span className="sm:hidden">CSV</span>
       </button>
-      <button onClick={onExportPDF} className="flex items-center gap-2 bg-white border border-[#E5E7EB] px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
-        <Download className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F59E0B]" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">PDF</span>
+      <button onClick={onExportPDF} className="flex items-center gap-1.5 bg-white border border-[#E5E7EB] px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
+        <Download className="w-3 h-3 md:w-4 md:h-4 text-[#F59E0B]" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">PDF</span>
       </button>
-      <button onClick={onInvite} className="flex items-center gap-2 bg-[#F59E0B] text-white px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-sm font-bold hover:bg-[#F59E0B]/90 transition-all shadow-md">
-        <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="hidden sm:inline">Invite Collaborator</span><span className="sm:hidden">Invite</span>
+      <button onClick={onInvite} className="flex items-center gap-1.5 bg-[#F59E0B] text-white px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold hover:bg-[#F59E0B]/90 transition-all shadow-md">
+        <UserPlus className="w-3 h-3 md:w-4 md:h-4" /> <span className="hidden sm:inline">Invite Collaborator</span><span className="sm:hidden">Invite</span>
       </button>
-      <button onClick={onRefresh} disabled={isRefreshing} className="flex items-center gap-2 bg-white border border-[#E5E7EB] px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
-        <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 text-[#F59E0B] ${isRefreshing && 'animate-spin'}`} /> <span className="hidden sm:inline">Refresh</span><span className="sm:hidden">Sync</span>
+      <button onClick={onRefresh} disabled={isRefreshing} className="flex items-center gap-1.5 bg-white border border-[#E5E7EB] px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
+        <RefreshCw className={`w-3 h-3 md:w-4 md:h-4 text-[#F59E0B] ${isRefreshing && 'animate-spin'}`} /> <span className="hidden sm:inline">Refresh</span><span className="sm:hidden">Sync</span>
       </button>
-      <button className="flex items-center gap-2 bg-white border border-[#E5E7EB] px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
-        <SlidersHorizontal className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F59E0B]" /> <span className="hidden sm:inline">Filter Data</span><span className="sm:hidden">Filter</span>
+      <button className="flex items-center gap-1.5 bg-white border border-[#E5E7EB] px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold text-[#1F2937] hover:bg-[#FBBF24]/10 transition-all shadow-sm">
+        <SlidersHorizontal className="w-3 h-3 md:w-4 md:h-4 text-[#F59E0B]" /> <span className="hidden sm:inline">Filter Data</span><span className="sm:hidden">Filter</span>
       </button>
-      <div className="flex-1 min-w-[20px] hidden md:block"></div>
-      <button onClick={onClear} className="flex items-center gap-2 bg-white border border-red-100 px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-sm font-bold text-red-500 hover:bg-red-50 transition-all shadow-sm ml-auto">
-        <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="hidden sm:inline">Reset</span><span className="sm:hidden">Clear</span>
+      <div className="flex-1 min-w-[10px] hidden md:block"></div>
+      <button onClick={onClear} className="flex items-center gap-1.5 bg-white border border-red-100 px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold text-red-500 hover:bg-red-50 transition-all shadow-sm ml-auto">
+        <Trash2 className="w-3 h-3 md:w-4 md:h-4" /> <span className="hidden sm:inline">Reset</span><span className="sm:hidden">Clear</span>
       </button>
     </div>
   );
@@ -918,14 +932,14 @@ function ExecutiveSummary({ analytics }: { analytics: AnalyticsData }) {
   ];
 
   return (
-    <div className="p-4 md:p-6 bg-[#FFF7ED] rounded-[1.5rem] md:rounded-[2rem] border border-[#FDBA74]/15 shadow-sm space-y-4">
-      <h3 className="text-xs md:text-sm font-black text-[#F59E0B] uppercase tracking-[0.2em] flex items-center gap-2">
-        <BrainCircuit className="w-4 h-4" /> AI Executive Summary
+    <div className="p-3 md:p-6 bg-[#FFF7ED] rounded-xl md:rounded-[2rem] border border-[#FDBA74]/15 shadow-sm space-y-3 md:space-y-4">
+      <h3 className="text-[10px] md:text-sm font-black text-[#F59E0B] uppercase tracking-[0.2em] flex items-center gap-2">
+        <BrainCircuit className="w-3.5 h-3.5 md:w-4 md:h-4" /> AI Executive Summary
       </h3>
-      <ul className="space-y-2">
+      <ul className="space-y-1.5 md:space-y-2">
         {summaryPoints.map((point, i) => (
-          <li key={i} className="text-xs md:text-sm font-medium text-slate-600 flex items-start gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] mt-2" />
+          <li key={i} className="text-[11px] md:text-sm font-medium text-slate-600 flex items-start gap-2 leading-snug">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] mt-1.5 shrink-0" />
             {point}
           </li>
         ))}
@@ -936,7 +950,7 @@ function ExecutiveSummary({ analytics }: { analytics: AnalyticsData }) {
 
 function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, onExportPDF, onRefresh, isRefreshing, onInvite, onClear }: DashboardViewProps) {
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="p-2 md:p-8 space-y-3 md:space-y-8 animate-in fade-in duration-500">
       <GlobalActionBar
         onExportCSV={onExportCSV}
         onExportPDF={onExportPDF}
@@ -945,18 +959,20 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
         isRefreshing={isRefreshing}
         onClear={onClear}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        <StatCard label="Total Interactions" value={analytics.total} sub="+12% from last week" icon={<MessageSquare />} color="orange" trend="up" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
+        <div className="col-span-2 lg:col-span-1">
+          <StatCard label="Total Interactions" value={analytics.total} sub="+12% from last week" icon={<MessageSquare />} color="orange" trend="up" />
+        </div>
         <StatCard label="CSAT Score" value={`${analytics.csat}%`} sub="Excellent performance" icon={<Target />} color="green" trend="up" />
         <StatCard label="Negative Alerts" value={analytics.negative} sub="Needs attention" icon={<Zap />} color="red" trend="down" />
       </div>
       <ExecutiveSummary analytics={analytics} />
-      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        <ChartContainer title="Sentiment Distribution" subtitle="Overall user emotional state">
-          <div className="h-48 md:h-64">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-8">
+        <ChartContainer title="Sentiment Distribution" subtitle="Overall emotional state">
+          <div className="h-44 md:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                <Pie data={pieData} innerRadius={window?.innerWidth < 768 ? 45 : 60} outerRadius={window?.innerWidth < 768 ? 65 : 80} paddingAngle={5} dataKey="value">
                   {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                 </Pie>
                 <Tooltip />
@@ -967,7 +983,7 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
         </ChartContainer>
 
         <ChartContainer title="Weekly Activity Trend" subtitle="Daily interaction volume">
-          <div className="h-48 md:h-64">
+          <div className="h-44 md:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
@@ -986,44 +1002,44 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
 
 function TeamView({ collaborators, onInvite, activityLogs }: { collaborators: Collaborator[], onInvite: () => void, activityLogs: ActivityLog[] }) {
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-2 md:p-8 space-y-3 md:space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 md:px-0">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold">Workspace Directory</h2>
-          <p className="text-xs md:text-sm text-slate-500">Manage collaborative access for SentimentSync projects</p>
+          <h2 className="text-base md:text-2xl font-bold text-[#1F2937]">Workspace Directory</h2>
+          <p className="text-[10px] md:text-sm text-slate-500 font-medium">Collaborative access for SentimentSync</p>
         </div>
-        <button onClick={onInvite} className="bg-[#F59E0B] text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all w-full sm:w-auto">
-          <UserPlus className="w-5 h-5" /> New Member
+        <button onClick={onInvite} className="bg-[#F59E0B] text-white px-5 py-2 rounded-lg md:rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all w-full sm:w-auto text-[11px] md:text-sm">
+          <UserPlus className="w-3.5 h-3.5 md:w-5 md:h-5" /> New Member
         </button>
       </div>
 
-      <div className="bg-white border border-[#E5E7EB] rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-sm overflow-x-auto">
+      <div className="bg-white border border-[#E5E7EB] rounded-xl md:rounded-[2rem] overflow-hidden shadow-sm overflow-x-auto">
         <table className="w-full text-left min-w-[500px]">
           <thead className="bg-slate-50 border-b border-[#E5E7EB]">
             <tr>
-              <th className="px-6 md:px-8 py-4 md:py-5 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-400">Member</th>
-              <th className="px-6 md:px-8 py-4 md:py-5 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-400">Role</th>
+              <th className="px-5 md:px-8 py-2.5 md:py-5 text-[9px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-400">Member</th>
+              <th className="px-5 md:px-8 py-2.5 md:py-5 text-[9px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-400">Role</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
             {collaborators.map((collab) => (
               <tr key={collab.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 md:px-8 py-4 md:py-5 text-xs md:text-sm font-bold text-slate-800">{collab.name}</td>
-                <td className="px-6 md:px-8 py-4 md:py-5 text-xs md:text-sm font-medium">{collab.role}</td>
+                <td className="px-5 md:px-8 py-2.5 md:py-5 text-[11px] md:text-sm font-bold text-slate-800">{collab.name}</td>
+                <td className="px-5 md:px-8 py-2.5 md:py-5 text-[11px] md:text-sm font-medium">{collab.role}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       
-      <div className="bg-white border border-[#E5E7EB] rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 shadow-sm">
-        <h3 className="text-lg font-bold mb-6">Activity Timeline</h3>
-        <div className="space-y-6">
+      <div className="bg-white border border-[#E5E7EB] rounded-xl md:rounded-[2rem] p-4 md:p-8 shadow-sm">
+        <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 text-[#1F2937]">Activity Timeline</h3>
+        <div className="space-y-3 md:space-y-6">
             {activityLogs.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log) => (
-                <div key={log.id} className="relative pl-8 border-l-2 border-[#FFF7ED] last:border-0 pb-2">
+                <div key={log.id} className="relative pl-6 md:pl-8 border-l-2 border-[#FFF7ED] last:border-0 pb-1 md:pb-2">
                     <div className="absolute -left-[9px] top-1 w-4 h-4 bg-[#F59E0B] rounded-full border-4 border-white" />
-                    <div className="text-xs md:text-sm font-bold text-slate-800">{log.action}</div>
-                    <div className="text-[10px] md:text-xs text-slate-400">{new Date(log.timestamp).toLocaleString()}</div>
+                    <div className="text-[11px] md:text-sm font-bold text-slate-800">{log.action}</div>
+                    <div className="text-[9px] md:text-xs text-slate-400 font-medium">{new Date(log.timestamp).toLocaleString()}</div>
                 </div>
             ))}
         </div>
@@ -1041,31 +1057,31 @@ function ReportsView({ conversations, onExportCSV, onExportPDF }: { conversation
   });
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex gap-2 flex-1">
-          <input type="date" onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} className="border p-2 rounded-xl text-xs flex-1" />
-          <input type="date" onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} className="border p-2 rounded-xl text-xs flex-1" />
+    <div className="p-2 md:p-8 space-y-3 md:space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row gap-2 md:gap-4 px-1">
+        <div className="flex gap-1.5 flex-1">
+          <input type="date" onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} className="border border-[#E5E7EB] p-2 rounded-lg md:rounded-xl text-[10px] md:text-xs flex-1 bg-white outline-none" />
+          <input type="date" onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} className="border border-[#E5E7EB] p-2 rounded-lg md:rounded-xl text-[10px] md:text-xs flex-1 bg-white outline-none" />
         </div>
         <div className="flex gap-2">
-          <button onClick={onExportCSV} className="bg-[#FFF7ED] px-4 py-2 rounded-xl text-[#F59E0B] text-xs font-bold flex-1 sm:flex-none">Export CSV</button>
-          <button onClick={onExportPDF} className="bg-[#FFF7ED] px-4 py-2 rounded-xl text-[#F59E0B] text-xs font-bold flex-1 sm:flex-none">Export PDF</button>
+          <button onClick={onExportCSV} className="bg-[#FFF7ED] px-4 py-2 rounded-lg md:rounded-xl text-[#F59E0B] text-[10px] md:text-xs font-bold flex-1 sm:flex-none border border-[#FDBA74]/20 shadow-sm">Export CSV</button>
+          <button onClick={onExportPDF} className="bg-[#FFF7ED] px-4 py-2 rounded-lg md:rounded-xl text-[#F59E0B] text-[10px] md:text-xs font-bold flex-1 sm:flex-none border border-[#FDBA74]/20 shadow-sm">Export PDF</button>
         </div>
       </div>
-      <div className="bg-white border rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 shadow-sm overflow-x-auto">
-        <h3 className="text-lg font-bold mb-4">Download History</h3>
+      <div className="bg-white border border-[#E5E7EB] rounded-xl md:rounded-[2rem] p-3 md:p-6 shadow-sm overflow-x-auto">
+        <h3 className="text-base md:text-lg font-bold mb-3 text-[#1F2937] px-1">Download History</h3>
         <table className="w-full min-w-[400px]">
-          <thead className="text-left border-b">
+          <thead className="text-left border-b border-[#E5E7EB]">
             <tr>
-              <th className="py-2 text-[10px] font-black uppercase text-slate-400 tracking-wider">Session Title</th>
-              <th className="py-2 text-[10px] font-black uppercase text-slate-400 tracking-wider">Created Date</th>
+              <th className="px-2 py-2 text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-wider">Session Title</th>
+              <th className="px-2 py-2 text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-wider">Created Date</th>
             </tr>
           </thead>
           <tbody>
               {filteredConversations.map(conv => (
-                <tr key={conv.id} className="border-t hover:bg-slate-50 transition-colors">
-                    <td className="py-4 text-xs md:text-sm font-medium">{conv.title}</td>
-                    <td className="py-4 text-xs md:text-sm text-slate-500">{conv.created_at.split('T')[0]}</td>
+                <tr key={conv.id} className="border-t border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td className="px-2 py-2.5 md:py-4 text-[11px] md:text-sm font-medium text-slate-700">{conv.title}</td>
+                    <td className="px-2 py-2.5 md:py-4 text-[11px] md:text-sm text-slate-400 font-medium">{conv.created_at.split('T')[0]}</td>
                 </tr>
               ))}
           </tbody>
