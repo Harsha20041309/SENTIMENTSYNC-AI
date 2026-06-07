@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from models import db, Conversation, Message, TeamMember, ActivityLog
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from models import db, User, Conversation, Message, TeamMember, ActivityLog
 from sentiment_engine import analyze_sentiment, generate_smart_response
 import os
 from datetime import datetime, timedelta
@@ -11,11 +13,15 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Database Configuration
+# Database & JWT Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sentimentsync.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'sentimentsync-ai-secret-key')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
 
 db.init_app(app)
+migrate = Migrate(app, db)
+jwt = JWTManager(app)
 
 def log_activity(action, user="Admin"):
     try:
@@ -26,19 +32,78 @@ def log_activity(action, user="Admin"):
         print(f"Failed to log activity: {e}")
 
 with app.app_context():
-    db.create_all()
+    # Only db.create_all() if not using migrations for existing DB
+    # db.create_all() 
+    
     # Initialize some team members if empty
     if not TeamMember.query.first():
         db.session.add(TeamMember(name="Katiki reddy Sri Harsha", email="katikireddysriharsha06@gmail.com", role="Admin"))
         db.session.add(TeamMember(name="Pranay", email="Pranay123@gmail.com", role="Analyst"))
         db.session.commit()
 
+# --- Auth Routes ---
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([name, email, password]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email already registered"}), 409
+
+    user = User(name=name, email=email)
+    user.set_password(password)
+    
+    db.session.add(user)
+    db.session.commit()
+
+    log_activity(f"New user registered: {email}", user=name)
+    
+    return jsonify({
+        "message": "User registered successfully",
+        "user": user.to_dict()
+    }), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([email, password]):
+        return jsonify({"error": "Email and password are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+
+    if user and user.check_password(password):
+        # Generate JWT access token
+        access_token = create_access_token(identity=user.id)
+        
+        log_activity(f"User logged in: {email}", user=user.name)
+        
+        return jsonify({
+            "message": "Login successful",
+            "token": access_token,
+            "user": user.to_dict()
+        }), 200
+
+    return jsonify({"error": "Invalid email or password"}), 401
+
+# --- Existing Routes ---
+
 @app.route('/api/test', methods=['GET'])
 def test_cors():
     return jsonify({"message": "CORS working"})
 
 @app.route('/api/chat', methods=['POST'])
+@jwt_required()
 def chat():
+    current_user_id = get_jwt_identity()
     data = request.json
     content = data.get('message')
     conversation_id = data.get('conversation_id')
@@ -48,15 +113,15 @@ def chat():
 
     # Get or create conversation
     if not conversation_id:
-        conversation = Conversation(title=content[:30] + "...")
+        conversation = Conversation(user_id=current_user_id, title=content[:30] + "...")
         db.session.add(conversation)
         db.session.commit()
         conversation_id = conversation.id
-        log_activity(f"Created session: {conversation.title}")
+        log_activity(f"Created session: {conversation.title}", user=current_user_id)
     else:
-        conversation = Conversation.query.get(conversation_id)
+        conversation = Conversation.query.filter_by(id=conversation_id, user_id=current_user_id).first()
         if not conversation:
-            return jsonify({"error": "Conversation not found"}), 404
+            return jsonify({"error": "Conversation not found or access denied"}), 404
 
     # Analyze user sentiment
     sentiment, score, confidence, priority = analyze_sentiment(content)
@@ -93,15 +158,19 @@ def chat():
     })
 
 @app.route('/api/conversations', methods=['GET'])
+@jwt_required()
 def get_conversations():
-    conversations = Conversation.query.order_by(Conversation.is_pinned.desc(), Conversation.created_at.desc()).all()
+    current_user_id = get_jwt_identity()
+    conversations = Conversation.query.filter_by(user_id=current_user_id).order_by(Conversation.is_pinned.desc(), Conversation.created_at.desc()).all()
     return jsonify([c.to_dict() for c in conversations])
 
 @app.route('/api/conversations/<id>', methods=['GET', 'DELETE', 'PATCH'])
+@jwt_required()
 def handle_conversation(id):
-    conversation = Conversation.query.get(id)
+    current_user_id = get_jwt_identity()
+    conversation = Conversation.query.filter_by(id=id, user_id=current_user_id).first()
     if not conversation:
-        return jsonify({"error": "Conversation not found"}), 404
+        return jsonify({"error": "Conversation not found or access denied"}), 404
     
     if request.method == 'GET':
         messages = Message.query.filter_by(conversation_id=id).order_by(Message.timestamp.asc()).all()
@@ -113,7 +182,7 @@ def handle_conversation(id):
     if request.method == 'DELETE':
         db.session.delete(conversation)
         db.session.commit()
-        log_activity(f"Deleted session: {id}")
+        log_activity(f"Deleted session: {id}", user=current_user_id)
         return jsonify({"success": True})
     
     if request.method == 'PATCH':
@@ -126,8 +195,14 @@ def handle_conversation(id):
         return jsonify(conversation.to_dict())
 
 @app.route('/api/analytics', methods=['GET'])
+@jwt_required()
 def get_analytics():
-    messages = Message.query.filter_by(role='user').all()
+    current_user_id = get_jwt_identity()
+    # Filter messages only for current user's conversations
+    user_conversations = Conversation.query.filter_by(user_id=current_user_id).with_entities(Conversation.id).all()
+    conversation_ids = [c[0] for c in user_conversations]
+    
+    messages = Message.query.filter(Message.conversation_id.in_(conversation_ids), Message.role == 'user').all()
     
     pos_count = len([m for m in messages if m.sentiment == 'positive'])
     neg_count = len([m for m in messages if m.sentiment == 'negative'])
@@ -144,6 +219,7 @@ def get_analytics():
     for i in range(7):
         date = now - timedelta(days=6-i)
         day_messages = Message.query.filter(
+            Message.conversation_id.in_(conversation_ids),
             Message.role == 'user',
             db.func.date(Message.timestamp) == date.date()
         ).all()
@@ -199,9 +275,11 @@ def get_activity():
     return jsonify([l.to_dict() for l in logs])
 
 @app.route('/api/upload', methods=['POST'])
+@jwt_required()
 def upload_dataset():
+    current_user_id = get_jwt_identity()
     # Placeholder for CSV analysis
-    log_activity("Uploaded dataset for analysis")
+    log_activity("Uploaded dataset for analysis", user=current_user_id)
     return jsonify({
         "success": True, 
         "summary": "Dataset analyzed: 124 records processed. Overall sentiment: Positive (62%).",

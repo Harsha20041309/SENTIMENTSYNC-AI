@@ -1,6 +1,8 @@
 flask
 flask-cors
 flask-sqlalchemy
+flask-migrate
+flask-jwt-extended
 textblob
 python-dotenv
 gunicorn

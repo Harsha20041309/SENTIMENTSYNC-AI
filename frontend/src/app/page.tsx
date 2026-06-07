@@ -29,7 +29,10 @@ import {
   Share2,
   Bell,
   FileUp,
-  Menu
+  Menu,
+  User,
+  Settings,
+  LogOut
 } from "lucide-react";
 import { 
   PieChart, Pie, Cell, 
@@ -39,6 +42,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import { useAuth } from "@/context/AuthContext";
 
 // --- API Configuration ---
 const API_BASE = "https://sentimentsync-ai-1.onrender.com/api";
@@ -128,10 +132,13 @@ interface DatasetAnalysis {
 
 // --- Main Application Component ---
 export default function SentimentSyncAI() {
+  const { token, user, logout } = useAuth();
   // --- State Management ---
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('chat');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -140,30 +147,14 @@ export default function SentimentSyncAI() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]); // ADDED
-  const [showNotifications, setShowNotifications] = useState(false); // ADDED
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
-
-  // Helper to add notification
-  const addNotification = (message: string) => {
-    const newNotif = { id: Math.random().toString(36), message, timestamp: new Date().toLocaleTimeString() };
-    setNotifications(prev => [newNotif, ...prev.slice(0, 4)]);
-  };
-  
-  // Collaborative State
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([
-    { id: '1', name: 'Katiki Reddy Sri Harsha', email: 'harsha@enterprise.ai', role: 'Admin', status: 'Active', joinedAt: '2024-01-15' },
-    { id: '2', name: 'Pranay', email: 'pranay@enterprise.ai', role: 'Analyst', status: 'Active', joinedAt: '2024-02-10' }
-  ]);
-  
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [newCollab, setNewCollab] = useState({ name: '', email: '', role: 'Viewer' as Role });
-
-  // Chat Filter State
   const [chatSearch, setChatSearch] = useState("");
-  const [conversationSearch, setConversationSearch] = useState(""); // NEW
+  const [conversationSearch, setConversationSearch] = useState("");
   const [chatSentimentFilter, setChatSentimentFilter] = useState<Message['sentiment'] | 'all'>('all');
   const [chatDateRange, setChatDateRange] = useState({ start: '', end: '' });
-
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     positive: 0,
     negative: 0,
@@ -173,15 +164,27 @@ export default function SentimentSyncAI() {
     avg_confidence: 0,
     weekly_trend: []
   });
-
   const scrollRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  // Helper for authenticated fetches
+  const authFetch = useCallback((url: string, options: RequestInit = {}) => {
+    return fetchWithTimeout(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  }, [token]);
 
   // --- API Action Handlers ---
 
   const fetchConversations = useCallback(async () => {
+    if (!token) return;
     try {
-      const res = await fetchWithTimeout(`${API_BASE}/conversations`);
+      const res = await authFetch(`${API_BASE}/conversations`);
       if (!res.ok) throw new Error("Failed to fetch history");
       const data = await res.json();
       setConversations(Array.isArray(data) ? data : []);
@@ -190,11 +193,12 @@ export default function SentimentSyncAI() {
       console.error("History fetch failed", err);
       setApiError("Backend connection issue. Historical data unavailable.");
     }
-  }, []);
+  }, [token, authFetch]);
 
   const fetchAnalytics = useCallback(async () => {
+    if (!token) return;
     try {
-      const res = await fetchWithTimeout(`${API_BASE}/analytics`);
+      const res = await authFetch(`${API_BASE}/analytics`);
       if (!res.ok) throw new Error("Failed to fetch analytics");
       const data = await res.json();
       setAnalytics(data);
@@ -203,12 +207,12 @@ export default function SentimentSyncAI() {
       console.error("Analytics fetch failed", err);
       setApiError("Backend connection issue. Analytics unavailable.");
     }
-  }, []);
+  }, [token, authFetch]);
 
   const selectConversation = async (id: string) => {
     try {
       setIsLoading(true);
-      const res = await fetchWithTimeout(`${API_BASE}/conversations/${id}`);
+      const res = await authFetch(`${API_BASE}/conversations/${id}`);
       if (!res.ok) throw new Error("Failed to load conversation");
       const data = await res.json();
       setConversationId(id);
@@ -224,7 +228,7 @@ export default function SentimentSyncAI() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !token) return;
 
     const userMessage: Message = {
       content: input,
@@ -238,9 +242,8 @@ export default function SentimentSyncAI() {
     setIsLoading(true);
 
     try {
-      const res = await fetchWithTimeout(`${API_BASE}/chat`, {
+      const res = await authFetch(`${API_BASE}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input, conversation_id: conversationId }),
       });
 
@@ -608,6 +611,52 @@ export default function SentimentSyncAI() {
                   <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
                     <ShieldCheck className="w-3.5 h-3.5" /> Workspace: Protected
                   </div>
+
+                  {/* User Profile Section */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                      className="flex items-center gap-3 p-1.5 pl-3 hover:bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all"
+                    >
+                      <div className="hidden md:block text-right">
+                        <div className="text-xs font-black text-[#1F2937] leading-none">{user?.name}</div>
+                        <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Enterprise User</div>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-[#F59E0B] flex items-center justify-center text-white font-black shadow-lg shadow-orange-500/20">
+                        {user?.name?.charAt(0)}
+                      </div>
+                    </button>
+
+                    {showProfileDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-30" 
+                          onClick={() => setShowProfileDropdown(false)}
+                        ></div>
+                        <div className="absolute top-full right-0 w-56 bg-white border border-slate-200 rounded-[1.5rem] shadow-2xl mt-2 z-40 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                          <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <div className="text-xs font-black text-[#1F2937] truncate">{user?.name}</div>
+                            <div className="text-[10px] font-bold text-slate-400 truncate">{user?.email}</div>
+                          </div>
+                          <div className="p-2">
+                            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-[#FFF7ED] hover:text-[#F59E0B] rounded-xl transition-all">
+                              <User className="w-4 h-4" /> My Profile
+                            </button>
+                            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-[#FFF7ED] hover:text-[#F59E0B] rounded-xl transition-all">
+                              <Settings className="w-4 h-4" /> Settings
+                            </button>
+                            <div className="my-1 border-t border-slate-100"></div>
+                            <button 
+                              onClick={logout}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                            >
+                              <LogOut className="w-4 h-4" /> Logout
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </header>
@@ -925,25 +974,100 @@ interface DashboardViewProps {
 }
 
 function ExecutiveSummary({ analytics }: { analytics: AnalyticsData }) {
-  const summaryPoints = [
-    analytics.positive > analytics.negative ? "Positive sentiment is leading this period." : "Positive sentiment requires attention.",
-    analytics.csat > 75 ? "Customer satisfaction scores remain strong." : "Customer satisfaction shows room for improvement.",
-    analytics.negative < analytics.total * 0.2 ? "Negative complaints remain low." : "Negative complaints require monitoring."
+  const getCommonSentiment = () => {
+    const { positive, negative, neutral } = analytics;
+    if (positive >= negative && positive >= neutral) return { label: 'Positive', color: 'text-emerald-500', bg: 'bg-emerald-50' };
+    if (negative >= positive && negative >= neutral) return { label: 'Negative', color: 'text-rose-500', bg: 'bg-rose-50' };
+    return { label: 'Neutral', color: 'text-[#F59E0B]', bg: 'bg-orange-50' };
+  };
+
+  const common = getCommonSentiment();
+  
+  const recommendations = [
+    analytics.csat < 70 ? "Increase response rate to negative feedback to boost satisfaction." : "Maintain current service levels; CSAT is within optimal range.",
+    analytics.negative > analytics.total * 0.15 ? "High volume of negative sentiment detected; consider a root-cause analysis." : "Negative sentiment is well-controlled.",
+    analytics.avg_confidence < 0.8 ? "Model confidence is low; consider uploading more specific training data." : "AI engine is operating with high predictive confidence."
   ];
 
+  const trendText = analytics.weekly_trend.length > 1 
+    ? (analytics.weekly_trend[analytics.weekly_trend.length-1].total > analytics.weekly_trend[analytics.weekly_trend.length-2].total 
+        ? "Activity is increasing compared to previous days." 
+        : "Activity volume is stabilizing.") 
+    : "Gathering more data for trend analysis...";
+
   return (
-    <div className="p-3 md:p-6 bg-[#FFF7ED] rounded-xl md:rounded-[2rem] border border-[#FDBA74]/15 shadow-sm space-y-3 md:space-y-4">
-      <h3 className="text-[10px] md:text-sm font-black text-[#F59E0B] uppercase tracking-[0.2em] flex items-center gap-2">
-        <BrainCircuit className="w-3.5 h-3.5 md:w-4 md:h-4" /> AI Executive Summary
-      </h3>
-      <ul className="space-y-1.5 md:space-y-2">
-        {summaryPoints.map((point, i) => (
-          <li key={i} className="text-[11px] md:text-sm font-medium text-slate-600 flex items-start gap-2 leading-snug">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] mt-1.5 shrink-0" />
-            {point}
-          </li>
-        ))}
-      </ul>
+    <div className="bg-white border border-[#E5E7EB] rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200/40 animate-in fade-in zoom-in-95 duration-500">
+      <div className="bg-[#FFF7ED] p-6 md:p-8 border-b border-[#FDBA74]/15 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#F59E0B] p-2.5 rounded-2xl shadow-lg shadow-orange-500/20">
+              <BrainCircuit className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-black text-[#1F2937] tracking-tight">AI Executive Summary</h3>
+          </div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-12">Enterprise Performance Overview</p>
+        </div>
+        <div className="flex items-center gap-4 ml-12 md:ml-0">
+          <div className="text-right">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Overall CSAT</div>
+            <div className="text-3xl font-black text-[#F59E0B] leading-none">{analytics.csat}%</div>
+          </div>
+          <div className="w-12 h-12 rounded-full border-4 border-[#FDBA74]/20 flex items-center justify-center p-1">
+            <div className="w-full h-full bg-[#F59E0B] rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {/* Core Insights */}
+        <div className="space-y-6">
+          <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Operational Insights</h4>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+              <span className="text-xs font-bold text-slate-500">Dominant Sentiment</span>
+              <span className={`text-xs font-black px-3 py-1 rounded-full ${common.bg} ${common.color}`}>{common.label}</span>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+              <span className="text-xs font-bold text-slate-500">Weekly Trajectory</span>
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs font-black text-[#1F2937]">Growth</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs font-medium text-slate-400 leading-relaxed px-1">
+            {trendText} Overall workspace health is currently <strong>{analytics.csat > 80 ? 'Optimal' : 'Stable'}</strong>.
+          </p>
+        </div>
+
+        {/* AI Recommendations */}
+        <div className="space-y-6 lg:col-span-2">
+          <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Strategic Recommendations</h4>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {recommendations.map((rec, i) => (
+              <div key={i} className="flex gap-4 p-5 bg-[#FFF7ED]/30 border border-[#FDBA74]/5 rounded-[1.8rem] hover:bg-[#FFF7ED]/50 transition-colors group">
+                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                  <Zap className="w-4 h-4 text-[#F59E0B]" />
+                </div>
+                <p className="text-xs font-medium text-slate-600 leading-relaxed">{rec}</p>
+              </div>
+            ))}
+            <div className="flex gap-4 p-5 bg-emerald-50/30 border border-emerald-100/20 rounded-[1.8rem] hover:bg-emerald-50/50 transition-colors group">
+                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                </div>
+                <p className="text-xs font-medium text-slate-600 leading-relaxed">Infrastructure is secure. Compliance protocols are active across all <strong>{analytics.total}</strong> interactions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-10 py-4 bg-slate-50 border-t border-slate-100 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] flex items-center justify-between">
+        <span>Engine: SentimentSync v4.2 Pro</span>
+        <span className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> System Live
+        </span>
+      </div>
     </div>
   );
 }
