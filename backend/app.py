@@ -29,8 +29,8 @@ with app.app_context():
     db.create_all()
     # Initialize some team members if empty
     if not TeamMember.query.first():
-        db.session.add(TeamMember(name="Alex Rivers", email="alex@enterprise.ai", role="Admin"))
-        db.session.add(TeamMember(name="Sarah Chen", email="sarah.c@enterprise.ai", role="Analyst"))
+        db.session.add(TeamMember(name="Katiki reddy Sri Harsha", email="katikireddysriharsha06@gmail.com", role="Admin"))
+        db.session.add(TeamMember(name="Pranay", email="Pranay123@gmail.com", role="Analyst"))
         db.session.commit()
 
 @app.route('/api/test', methods=['GET'])
