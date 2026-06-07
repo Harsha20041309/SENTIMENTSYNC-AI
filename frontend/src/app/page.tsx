@@ -274,7 +274,7 @@ export default function SentimentSyncAI() {
     setConversationId(null);
     setMessages([]);
     setActiveTab('chat');
-    addNotification("New session created");
+    //addNotification("New session created");
   };
 
   const handleRefreshAnalytics = async () => {
@@ -313,7 +313,7 @@ export default function SentimentSyncAI() {
     setCollaborators([...collaborators, collab]);
     setNewCollab({ name: '', email: '', role: 'Viewer' });
     setIsInviteModalOpen(false);
-    addNotification("Member invited");
+    //addNotification("Member invited");
   };
 
   const handleExportCSV = () => {
@@ -331,7 +331,7 @@ export default function SentimentSyncAI() {
     a.download = `SentimentSync_Export_${new Date().getTime()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    addNotification("Report exported (CSV)");
+    //addNotification("Report exported (CSV)");
   };
 
   const handleExportPDF = async () => {
