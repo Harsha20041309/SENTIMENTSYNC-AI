@@ -1,80 +1,52 @@
 # SentimentSync AI
 
-An enterprise-style sentiment analytics platform built using Next.js, Flask, and SQLite.
+## Project Overview
+
+SentimentSync AI is an enterprise-grade sentiment analysis platform that enables organizations to analyze conversations, monitor sentiment trends, manage teams, and generate actionable insights.
 
 ## Features
 
-* Real-time Sentiment Analysis
-* Positive, Neutral, and Negative Classification
-* Interactive Analytics Dashboard
-* Team Collaboration Module
-* Conversation History Management
-* Activity Logs
-* CSV/PDF Export
-* KPI Metrics
-* Weekly Trend Analysis
-* Responsive SaaS Dashboard UI
+* User Authentication (Login/Register)
+* Dashboard with Personalized Welcome Card
+* Chat Sentiment Analysis
+* Analytics Dashboard
+* Team Management Panel
+* Reports Generation
+* Dataset Analysis Module
+* AI Insight Widget
+* User Profile & Settings
+* Responsive Design
 
-## Tech Stack
+## Technology Stack
 
-### Frontend
+Frontend:
 
 * Next.js
 * React
 * TypeScript
 * Tailwind CSS
-* Recharts
 
-### Backend
+Backend:
 
+* Python
 * Flask
-* Flask-CORS
 * SQLAlchemy
+* JWT Authentication
 
-### Database
+Database:
 
 * SQLite
 
-## Project Structure
+Deployment:
 
-```text
-SentimentSync AI
-├── frontend/
-├── backend/
-├── package.json
-└── README.md
-```
+* Vercel (Frontend)
+* Render (Backend)
 
-## Installation
+## GitHub Repository
 
-### Frontend
+https://github.com/Harsha20041309/SENTIMENTSYNC-AI
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Developer
 
-### Backend
-
-```bash
-cd backend
-pip install -r requirements.txt
-python app.py
-```
-
-## Screenshots
-
-Add dashboard screenshots here.
-
-## Future Enhancements
-
-* Emotion Detection
-* Executive Summary Generation
-* Dataset Analysis
-* Email Invitations
-* Advanced Filters
-
-## Author
-
-Harsha
+Katiki Reddy Sri Harsha
+B.Tech Data Science
