@@ -45,6 +45,7 @@ with app.app_context():
 
 @app.route('/api/register', methods=['POST'])
 def register():
+    print("REGISTER API HIT")
     data = request.json
     name = data.get('name')
     email = data.get('email')
