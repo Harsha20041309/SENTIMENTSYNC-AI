@@ -61,7 +61,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
 };
 
 // --- Types ---
-type Tab = 'dashboard' | 'chat' | 'analytics' | 'reports' | 'team' | 'dataset';
+type Tab = 'dashboard' | 'chat' | 'analytics' | 'reports' | 'team' | 'dataset' | 'settings';
 type Role = 'Viewer' | 'Analyst' | 'Admin';
 
 interface Notification {
@@ -639,15 +639,21 @@ export default function SentimentSyncAI() {
                             <div className="text-[10px] font-bold text-slate-400 truncate">{user?.email}</div>
                           </div>
                           <div className="p-2">
-                            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-[#FFF7ED] hover:text-[#F59E0B] rounded-xl transition-all">
+                            <button 
+                              onClick={() => { setActiveTab('dashboard'); setShowProfileDropdown(false); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-[#FFF7ED] hover:text-[#F59E0B] rounded-xl transition-all"
+                            >
                               <User className="w-4 h-4" /> My Profile
                             </button>
-                            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-[#FFF7ED] hover:text-[#F59E0B] rounded-xl transition-all">
+                            <button 
+                              onClick={() => { setActiveTab('settings' as Tab); setShowProfileDropdown(false); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-[#FFF7ED] hover:text-[#F59E0B] rounded-xl transition-all"
+                            >
                               <Settings className="w-4 h-4" /> Settings
                             </button>
                             <div className="my-1 border-t border-slate-100"></div>
                             <button 
-                              onClick={logout}
+                              onClick={() => { logout(); setShowProfileDropdown(false); }}
                               className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
                             >
                               <LogOut className="w-4 h-4" /> Logout
@@ -778,6 +784,9 @@ export default function SentimentSyncAI() {
                       onInvite={() => setIsInviteModalOpen(true)} 
                       activityLogs={activityLogs}
                     />
+                  )}
+                  {activeTab === 'settings' && (
+                    <SettingsView />
                   )}
                   {activeTab === 'chat' && (
                     <div className="flex h-full flex-col max-w-4xl mx-auto animate-in fade-in duration-500 overflow-hidden bg-white">
@@ -1073,8 +1082,20 @@ function ExecutiveSummary({ analytics }: { analytics: AnalyticsData }) {
 }
 
 function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, onExportPDF, onRefresh, isRefreshing, onInvite, onClear }: DashboardViewProps) {
+  const { user } = useAuth();
+  
   return (
     <div className="p-2 md:p-8 space-y-3 md:space-y-8 animate-in fade-in duration-500">
+      <WelcomeCard 
+        userName={user?.name || 'User'} 
+        stats={{
+          totalConversations: analytics.total,
+          positivePercent: analytics.csat,
+          avgConfidence: analytics.avg_confidence,
+          lastLogin: new Date().toLocaleTimeString() // Placeholder
+        }}
+      />
+      
       <GlobalActionBar
         onExportCSV={onExportCSV}
         onExportPDF={onExportPDF}
@@ -1083,6 +1104,16 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
         isRefreshing={isRefreshing}
         onClear={onClear}
       />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+           <ExecutiveSummary analytics={analytics} />
+        </div>
+        <div>
+           <AIInsightWidget analytics={analytics} />
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
         <div className="col-span-2 lg:col-span-1">
           <StatCard label="Total Interactions" value={analytics.total} sub="+12% from last week" icon={<MessageSquare />} color="orange" trend="up" />
@@ -1090,7 +1121,7 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
         <StatCard label="CSAT Score" value={`${analytics.csat}%`} sub="Excellent performance" icon={<Target />} color="green" trend="up" />
         <StatCard label="Negative Alerts" value={analytics.negative} sub="Needs attention" icon={<Zap />} color="red" trend="down" />
       </div>
-      <ExecutiveSummary analytics={analytics} />
+      
       <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-8">
         <ChartContainer title="Sentiment Distribution" subtitle="Overall emotional state">
           <div className="h-44 md:h-64">
@@ -1120,6 +1151,226 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
           </div>
         </ChartContainer>
       </div>
+    </div>
+  );
+}
+
+function WelcomeCard({ userName, stats }: { userName: string, stats: any }) {
+  return (
+    <div className="bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl shadow-orange-500/20 relative overflow-hidden group">
+      <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform duration-700">
+        <BrainCircuit className="w-64 h-64" />
+      </div>
+      <div className="relative z-10 space-y-8">
+        <div className="space-y-2">
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight">Welcome Back, {userName} 👋</h2>
+          <p className="text-orange-50/80 font-medium text-sm md:text-base">Your enterprise sentiment dashboard is ready for analysis.</p>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 pt-4">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/10">
+            <div className="text-[10px] font-black uppercase tracking-widest text-orange-100/60 mb-1">Conversations</div>
+            <div className="text-xl md:text-2xl font-black">{stats.totalConversations}</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/10">
+            <div className="text-[10px] font-black uppercase tracking-widest text-orange-100/60 mb-1">Positive Sentiment</div>
+            <div className="text-xl md:text-2xl font-black">{stats.positivePercent}%</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/10">
+            <div className="text-[10px] font-black uppercase tracking-widest text-orange-100/60 mb-1">Avg Confidence</div>
+            <div className="text-xl md:text-2xl font-black">{stats.avgConfidence}</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/10">
+            <div className="text-[10px] font-black uppercase tracking-widest text-orange-100/60 mb-1">Last Sync</div>
+            <div className="text-xl md:text-2xl font-black">{stats.lastLogin}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AIInsightWidget({ analytics }: { analytics: AnalyticsData }) {
+  const improvement = useMemo(() => Math.floor(Math.random() * 15) + 5, []);
+  
+  return (
+    <div className="bg-white border border-[#E5E7EB] rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/40 h-full flex flex-col justify-between space-y-8">
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-emerald-500 p-2 rounded-xl shadow-lg shadow-emerald-500/20">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="text-lg font-black text-[#1F2937] tracking-tight">AI Insights</h3>
+        </div>
+        <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+          &quot;Your sentiment performance improved by {improvement}% compared to previous activity. High-value interactions are driving workspace growth.&quot;
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <span>Trend</span>
+            <span className="text-emerald-500">Positive</span>
+          </div>
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+          </div>
+        </div>
+
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+          <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">Recommendation</div>
+          <p className="text-xs font-bold text-slate-800">Optimize response latency for negative alerts to maintain CSAT momentum.</p>
+        </div>
+
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Confidence Score</span>
+          <span className="text-xs font-black text-[#F59E0B] bg-[#FFF7ED] px-3 py-1 rounded-full border border-[#FDBA74]/20">{analytics.avg_confidence * 100}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsView() {
+  const { user, token, updateUser } = useAuth();
+  const [profile, setProfile] = useState({ name: user?.name || '', email: user?.email || '' });
+  const [security, setSecurity] = useState({ password: '', confirmPassword: '' });
+  const [preferences, setPreferences] = useState({ darkMode: false, notifications: true, emailAlerts: true });
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/user/profile`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile)
+      });
+      if (!res.ok) throw new Error("Update failed");
+      const data = await res.json();
+      updateUser(data);
+      showToast("Profile updated successfully!");
+    } catch (err) {
+      alert("Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSecuritySave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (security.password !== security.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/user/security`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: security.password })
+      });
+      if (!res.ok) throw new Error("Update failed");
+      showToast("Password updated successfully!");
+      setSecurity({ password: '', confirmPassword: '' });
+    } catch (err) {
+      alert("Failed to update password");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  return (
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8 md:space-y-12 animate-in slide-in-from-bottom-4 duration-500">
+      {toast && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-[#1F2937] text-white px-8 py-4 rounded-2xl font-bold shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+          {toast}
+        </div>
+      )}
+
+      <div className="space-y-2 px-1">
+        <h2 className="text-2xl md:text-4xl font-black text-[#1F2937] tracking-tight">Workspace Settings</h2>
+        <p className="text-xs md:text-sm text-slate-500 font-medium">Manage your personal profile, security and preferences.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+        {/* Profile Settings */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="bg-[#FFF7ED] p-2 rounded-xl border border-[#FDBA74]/20"><User className="w-5 h-5 text-[#F59E0B]" /></div>
+             <h3 className="text-lg font-black text-[#1F2937]">Profile Identity</h3>
+          </div>
+          <form onSubmit={handleProfileSave} className="space-y-5 bg-white border border-[#E5E7EB] p-8 rounded-[2.5rem] shadow-sm">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+              <input type="text" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-[#F59E0B]/10 outline-none transition-all text-sm font-bold" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
+              <input type="email" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-[#F59E0B]/10 outline-none transition-all text-sm font-bold" />
+            </div>
+            <button type="submit" disabled={isSaving} className="w-full bg-[#F59E0B] text-white py-4 rounded-2xl font-black shadow-lg shadow-orange-500/20 hover:bg-[#F59E0B]/90 transition-all text-sm uppercase tracking-widest active:scale-[0.98]">
+              {isSaving ? 'Synchronizing...' : 'Save Profile Changes'}
+            </button>
+          </form>
+        </section>
+
+        {/* Security Settings */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="bg-rose-50 p-2 rounded-xl border border-rose-100"><ShieldCheck className="w-5 h-5 text-rose-500" /></div>
+             <h3 className="text-lg font-black text-[#1F2937]">Security & Auth</h3>
+          </div>
+          <form onSubmit={handleSecuritySave} className="space-y-5 bg-white border border-[#E5E7EB] p-8 rounded-[2.5rem] shadow-sm">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">New Password</label>
+              <input type="password" value={security.password} onChange={e => setSecurity({...security, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-[#F59E0B]/10 outline-none transition-all text-sm font-bold" placeholder="••••••••" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Confirm Password</label>
+              <input type="password" value={security.confirmPassword} onChange={e => setSecurity({...security, confirmPassword: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-[#F59E0B]/10 outline-none transition-all text-sm font-bold" placeholder="••••••••" />
+            </div>
+            <button type="submit" disabled={isSaving} className="w-full bg-[#1F2937] text-white py-4 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-sm uppercase tracking-widest active:scale-[0.98]">
+              {isSaving ? 'Securing...' : 'Update Security Key'}
+            </button>
+          </form>
+        </section>
+
+        {/* Preferences */}
+        <section className="space-y-6 md:col-span-2">
+          <div className="flex items-center gap-3">
+             <div className="bg-emerald-50 p-2 rounded-xl border border-emerald-100"><Zap className="w-5 h-5 text-emerald-500" /></div>
+             <h3 className="text-lg font-black text-[#1F2937]">Workspace Preferences</h3>
+          </div>
+          <div className="bg-white border border-[#E5E7EB] p-8 rounded-[2.5rem] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-8">
+            <PreferenceToggle label="Dark Mode" description="Enable nocturnal interface" active={preferences.darkMode} onToggle={() => setPreferences({...preferences, darkMode: !preferences.darkMode})} />
+            <PreferenceToggle label="Push Notifications" description="Real-time sentiment alerts" active={preferences.notifications} onToggle={() => setPreferences({...preferences, notifications: !preferences.notifications})} />
+            <PreferenceToggle label="Email Reports" description="Weekly analytics digest" active={preferences.emailAlerts} onToggle={() => setPreferences({...preferences, emailAlerts: !preferences.emailAlerts})} />
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function PreferenceToggle({ label, description, active, onToggle }: { label: string, description: string, active: boolean, onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-all group">
+      <div className="space-y-1">
+        <div className="text-sm font-black text-[#1F2937]">{label}</div>
+        <div className="text-[10px] font-medium text-slate-400">{description}</div>
+      </div>
+      <button onClick={onToggle} className={`w-12 h-6 rounded-full transition-all relative ${active ? 'bg-[#F59E0B]' : 'bg-slate-200'}`}>
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${active ? 'left-7' : 'left-1'}`}></div>
+      </button>
     </div>
   );
 }

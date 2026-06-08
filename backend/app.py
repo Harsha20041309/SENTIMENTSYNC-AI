@@ -95,6 +95,54 @@ def login():
 
     return jsonify({"error": "Invalid email or password"}), 401
 
+@app.route('/api/user/profile', methods=['GET', 'PUT'])
+@jwt_required()
+def handle_profile():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    if request.method == 'GET':
+        return jsonify(user.to_dict())
+    
+    if request.method == 'PUT':
+        data = request.json
+        name = data.get('name')
+        email = data.get('email')
+        
+        if name:
+            user.name = name
+        if email:
+            # Check if email is already taken by another user
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user and existing_user.id != current_user_id:
+                return jsonify({"error": "Email already in use"}), 409
+            user.email = email
+            
+        db.session.commit()
+        log_activity(f"Updated profile: {user.email}", user=user.name)
+        return jsonify(user.to_dict())
+
+@app.route('/api/user/security', methods=['PUT'])
+@jwt_required()
+def handle_security():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.json
+    new_password = data.get('password')
+    
+    if not new_password:
+        return jsonify({"error": "New password is required"}), 400
+        
+    user.set_password(new_password)
+    db.session.commit()
+    log_activity(f"Changed password: {user.email}", user=user.name)
+    return jsonify({"message": "Password updated successfully"})
+
 # --- Existing Routes ---
 
 @app.route('/api/test', methods=['GET'])
