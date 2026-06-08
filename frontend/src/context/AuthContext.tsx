@@ -25,7 +25,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     // Load auth state from localStorage on mount
@@ -36,6 +35,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
+    
+    // Use a tiny delay or just ensure we don't trigger multiple renders if possible
+    // Actually, setting isLoading(false) is necessary.
     setIsLoading(false);
   }, []);
 

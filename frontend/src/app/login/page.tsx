@@ -40,8 +40,8 @@ export default function LoginPage() {
       }
 
       login(data.token, data.user);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
         <div className="text-center pt-4">
           <p className="text-slate-400 font-medium">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link 
               href="/register" 
               className="text-[#F59E0B] font-bold hover:underline"

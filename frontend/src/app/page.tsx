@@ -147,7 +147,7 @@ export default function SentimentSyncAI() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications] = useState<Notification[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [newCollab, setNewCollab] = useState({ name: '', email: '', role: 'Viewer' as Role });
@@ -1155,7 +1155,14 @@ function DashboardView({ analytics, pieData, trendData, chartRef, onExportCSV, o
   );
 }
 
-function WelcomeCard({ userName, stats }: { userName: string, stats: any }) {
+interface WelcomeStats {
+  totalConversations: number;
+  positivePercent: number;
+  avgConfidence: number;
+  lastLogin: string;
+}
+
+function WelcomeCard({ userName, stats }: { userName: string, stats: WelcomeStats }) {
   return (
     <div className="bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl shadow-orange-500/20 relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform duration-700">
@@ -1191,7 +1198,9 @@ function WelcomeCard({ userName, stats }: { userName: string, stats: any }) {
 }
 
 function AIInsightWidget({ analytics }: { analytics: AnalyticsData }) {
-  const improvement = useMemo(() => Math.floor(Math.random() * 15) + 5, []);
+  // Use a stable random value generated once outside render or via a ref if needed, 
+  // but for this specific UI requirement, we can derive it from analytics to keep it "pure"
+  const improvement = useMemo(() => (analytics.total % 15) + 5, [analytics.total]);
   
   return (
     <div className="bg-white border border-[#E5E7EB] rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/40 h-full flex flex-col justify-between space-y-8">

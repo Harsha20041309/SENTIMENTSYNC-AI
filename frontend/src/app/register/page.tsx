@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterPage() {
-  const { login } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -58,8 +57,8 @@ export default function RegisterPage() {
       // Alternatively, I could modify the backend to return a token on register.
       // For simplicity, let's redirect to login.
       window.location.href = '/login';
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
     }
