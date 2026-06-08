@@ -32,8 +32,8 @@ def log_activity(action, user="Admin"):
         print(f"Failed to log activity: {e}")
 
 with app.app_context():
-    # Only db.create_all() if not using migrations for existing DB
-    # db.create_all() 
+     # Only db.create_all() if not using migrations for existing DB
+    db.create_all() 
     
     # Initialize some team members if empty
     if not TeamMember.query.first():
