@@ -135,7 +135,7 @@ export default function SentimentSyncAI() {
   const { token, user, logout } = useAuth();
   // --- State Management ---
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('chat');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [messages, setMessages] = useState<Message[]>([]);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
